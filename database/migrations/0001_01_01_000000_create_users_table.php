@@ -22,7 +22,7 @@ return new class extends Migration
             // Sistem Role
             $table->enum('role', ['admin', 'seller', 'user'])->default('user');
             
-            // Data Toko (Boleh kosong sampai user mendaftar jadi seller)
+            // Data Toko
             $table->string('store_name')->nullable();
             $table->text('store_address')->nullable();
             

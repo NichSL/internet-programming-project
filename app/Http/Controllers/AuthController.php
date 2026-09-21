@@ -14,12 +14,11 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
-            // Username tidak boleh mengandung kata "admin" (case-insensitive)
             'username' => ['required', 'string', 'max:255', 'unique:users', 'regex:/^((?!admin).)*$/i'], 
             'email'    => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ], [
-            'username.regex' => 'Username tidak boleh menggunakan atau mengandung kata "admin".'
+            'username.regex' => 'username anda'
         ]);
 
         $user = User::create([
@@ -67,7 +66,6 @@ class AuthController extends Controller
     public function adminLogin(Request $request)
     {
         $credentials = $request->validate([
-            // Wajib mengandung kata "admin"
             'username' => ['required', 'string', 'regex:/admin/i'],
             'password' => 'required|string',
         ], [

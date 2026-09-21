@@ -19,7 +19,7 @@ class DashboardController extends Controller
         $user->role = 'seller';
         $user->store_name = $request->store_name;
         $user->store_address = $request->store_address;
-        $user->save(); // Simpan perubahan ke database
+        $user->save();
 
         return redirect('/seller/dashboard')->with('success', 'Selamat! Toko Anda berhasil dibuat.');
     }
