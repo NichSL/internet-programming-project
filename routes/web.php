@@ -45,4 +45,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/profile', [\App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('settings.profile');
     Route::post('/settings/password', [\App\Http\Controllers\SettingsController::class, 'updatePassword'])->name('settings.password');
     Route::post('/settings/store', [\App\Http\Controllers\SettingsController::class, 'updateStore'])->name('settings.store');
+
 });
+
+
+// 3. Role: SELLER
+    Route::middleware('role:seller')->group(function () {
+        // Panggil melalui controller agar data produk ikut terkirim
+        Route::get('/seller/dashboard', [\App\Http\Controllers\DashboardController::class, 'sellerDashboard'])->name('seller.dashboard');
+        
+        // Rute CRUD Produk (kecuali index dan show karena sudah gabung di dashboard)
+        Route::resource('seller/products', \App\Http\Controllers\ProductController::class)->except(['index', 'show']);
+    });

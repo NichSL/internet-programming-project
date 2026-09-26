@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Models\User;
 
 class SettingsController extends Controller
 {
@@ -20,7 +21,7 @@ class SettingsController extends Controller
     public function updateProfile(Request $request)
     {
         $user = Auth::user();
-        
+
         $rules = [
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],

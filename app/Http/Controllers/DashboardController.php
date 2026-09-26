@@ -23,4 +23,10 @@ class DashboardController extends Controller
 
         return redirect('/seller/dashboard')->with('success', 'Selamat! Toko Anda berhasil dibuat.');
     }
+
+    public function sellerDashboard()
+    {
+        $products = Auth::user()->products()->latest()->get();
+        return view('dashboards.seller', compact('products'));
+    }
 }

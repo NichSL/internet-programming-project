@@ -15,8 +15,6 @@
 <body class="bg-slate-50 dark:bg-slate-900 transition-colors duration-300 relative">
     <nav class="bg-emerald-700 dark:bg-emerald-900 shadow-md">
         <div class="w-full px-4 sm:px-6 flex items-center h-20 relative">
-            
-            <!-- POJOK KIRI: Toggle Light/Dark Mode -->
             <div class="absolute left-4 sm:left-6 z-10">
                 <button onclick="toggleTheme()" class="relative flex items-center w-[120px] h-[46px] rounded-full transition-colors duration-300 bg-[#b3b3b3] dark:bg-[#1a1a1a] border-2 border-transparent focus:outline-none overflow-hidden shadow-sm hover:opacity-90">
                     <span class="absolute left-3 text-white font-extrabold text-[11px] leading-tight tracking-wider dark:opacity-0 transition-opacity duration-300">LIGHT<br>MODE</span>
@@ -27,42 +25,27 @@
                     </span>
                 </button>
             </div>
-
-            <!-- CONTAINER UTAMA: Logo dan Menu Kanan -->
             <div class="max-w-7xl mx-auto w-full flex justify-between items-center pl-[140px] xl:pl-0">
-                
-                <!-- KIRI CONTAINER: Logo -->
                 <h1 class="font-black text-2xl text-white tracking-tight">Seller<span class="text-emerald-300">Center</span></h1>
-                
-                <!-- KANAN CONTAINER -->
                 <div class="flex items-center gap-5">
-                    
-                    <!-- Tombol Pemicu Modal: Keluar dari Toko -->
                     <button onclick="openModal('modal-keluar-toko')" class="text-emerald-50 hover:text-white font-medium bg-emerald-600 dark:bg-emerald-700 px-4 py-2 rounded-lg transition">Keluar dari Toko</button>
-                    
-                    <!-- Tombol Pemicu Modal: Logout Akun -->
                     <button onclick="openModal('modal-logout')" class="text-white font-medium bg-red-600 hover:bg-red-700 shadow-md px-4 py-2 rounded-lg transition">Logout Akun</button>
-
-                    <!-- Form Logout Asli (Disembunyikan) -->
-                    <form id="form-logout" action="{{ route('logout') }}" method="POST" class="hidden">
-                        @csrf
-                    </form>
-
-                    <!-- Setting (Gear) -->
+                    <form id="form-logout" action="{{ route('logout') }}" method="POST" class="hidden">@csrf</form>
                     <a href="{{ route('settings', ['context' => 'seller']) }}" class="text-emerald-100 hover:text-white transition ml-2">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </a>
                 </div>
-
             </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto mt-10 px-4 sm:px-6 lg:px-8">
+    <main class="max-w-7xl mx-auto mt-10 px-4 sm:px-6 lg:px-8 pb-20">
         @if(session('success'))
-            <div class="bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6">{{ session('success') }}</div>
+            <div class="bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm">{{ session('success') }}</div>
         @endif
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+
+        <!-- Informasi Toko -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between mb-8">
             <div>
                 <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">Informasi Toko</p>
                 <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white mb-2">{{ Auth::user()->store_name }}</h2>
@@ -73,19 +56,55 @@
                 <p class="font-bold text-slate-800 dark:text-white">{{ Auth::user()->name }}</p>
             </div>
         </div>
+
+        <!-- Tabel Manajemen Produk -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                <h3 class="text-xl font-bold text-slate-800 dark:text-white">Daftar Produk</h3>
+                <a href="{{ route('products.create') }}" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded-lg transition shadow-sm flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Tambah Produk
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider">
+                            <th class="px-6 py-4 font-semibold">Nama Produk</th>
+                            <th class="px-6 py-4 font-semibold">Harga</th>
+                            <th class="px-6 py-4 font-semibold">Stok</th>
+                            <th class="px-6 py-4 font-semibold text-right">Manajemen</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                        @forelse($products as $product)
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4 text-slate-800 dark:text-slate-200 font-medium">{{ $product->name }}</td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-400">Rp {{ number_format($product->price, 0, ',', '.') }}</td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ $product->stock }} item</td>
+                                <td class="px-6 py-4 text-right flex justify-end gap-3">
+                                    <a href="{{ route('products.edit', $product->id) }}" class="text-blue-500 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-md transition font-medium">Edit</a>
+                                    <form action="{{ route('products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus produk ini?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="text-red-500 hover:text-red-700 bg-red-50 dark:bg-red-900/30 px-3 py-1 rounded-md transition font-medium">Hapus</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Belum ada produk. Silakan tambah produk pertama Anda.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </main>
 
-    <!-- ============================================== -->
-    <!-- FLOAT WINDOW / MODAL KONFIRMASI -->
-    <!-- ============================================== -->
-
-    <!-- Modal 1: Keluar dari Toko -->
+    <!-- Modal Keluar Toko -->
     <div id="modal-keluar-toko" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <!-- Background Gelap (Klik untuk tutup) -->
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-keluar-toko')"></div>
-        
-        <!-- Kotak Modal -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl z-10 text-center border border-slate-200 dark:border-slate-700 transform transition-all">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl z-10 text-center border border-slate-200 dark:border-slate-700">
             <div class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
             </div>
@@ -98,13 +117,10 @@
         </div>
     </div>
 
-    <!-- Modal 2: Logout Akun -->
+    <!-- Modal Logout Akun -->
     <div id="modal-logout" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <!-- Background Gelap (Klik untuk tutup) -->
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-logout')"></div>
-        
-        <!-- Kotak Modal -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl z-10 text-center border border-slate-200 dark:border-slate-700 transform transition-all">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl z-10 text-center border border-slate-200 dark:border-slate-700">
             <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </div>
@@ -117,11 +133,7 @@
         </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- SCRIPT LOGIKA UNTUK THEME & MODAL              -->
-    <!-- ============================================== -->
     <script>
-        // Logika Mode Gelap/Terang
         function toggleTheme() {
             const html = document.documentElement;
             if (html.classList.contains('dark')) {
@@ -132,14 +144,11 @@
                 localStorage.theme = 'dark';
             }
         }
-
-        // Logika Buka/Tutup Modal
         function openModal(modalId) {
             const modal = document.getElementById(modalId);
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
-
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
             modal.classList.add('hidden');
