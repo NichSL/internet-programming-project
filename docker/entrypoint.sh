@@ -2,8 +2,19 @@
 set -e
 
 PORT="${PORT:-9000}"
-echo "Configuring Nginx to listen on port ${PORT}..."
+
+echo "========================================"
+echo "RAILWAY PORT DIAGNOSTIC"
+echo "PORT environment: ${PORT}"
+echo "Nginx configuration:"
+grep -n "listen" /etc/nginx/http.d/default.conf
+echo "PHP-FPM configuration:"
+grep -n "^listen" /usr/local/etc/php-fpm.d/zz-docker.conf
+echo "========================================"
+
 sed -i "s/__PORT__/${PORT}/g" /etc/nginx/http.d/default.conf
+
+nginx -t
 
 # Ensure critical directories exist
 mkdir -p /var/www/html/storage/framework/cache/data \
