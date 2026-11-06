@@ -10,7 +10,7 @@ Route::get('/', function () {
 
 Route::middleware('guest')->group(function () {
     // Portal User Biasa
-    Route::view('/login', 'auth.login')->name('login'); 
+    Route::view('/login', 'auth.login')->name('login');
     Route::view('/register', 'auth.register')->name('register');
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
@@ -25,35 +25,35 @@ Route::middleware('auth')->group(function () {
 
     // 1. Role: USER BIASA & SELLER (Keduanya bisa mengakses halaman ini)
     Route::middleware('role:user,seller')->group(function () {
-        Route::view('/dashboard', 'dashboards.user')->name('user.dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
         Route::view('/become-seller', 'dashboards.become_seller')->name('become.seller');
         Route::post('/become-seller', [DashboardController::class, 'upgradeToSeller']);
+
+        // Rute Beli & Checkout — accessible to both user and seller roles
+        Route::post('/user/buy/{id}', [DashboardController::class, 'buyProduct'])->name('user.buy');
+        Route::get('/checkout', [DashboardController::class, 'checkout'])->name('user.checkout');
+        Route::post('/checkout/process', [DashboardController::class, 'processCheckout'])->name('user.checkout.process');
+        Route::get('/orders', [DashboardController::class, 'orderHistory'])->name('user.orders');
     });
 
     // 2. Role: SELLER (Hanya Seller yang bisa masuk sini)
     Route::middleware('role:seller')->group(function () {
-        Route::view('/seller/dashboard', 'dashboards.seller')->name('seller.dashboard');
+        Route::get('/seller/dashboard', [DashboardController::class, 'sellerDashboard'])->name('seller.dashboard');
+
+        // Rute CRUD Produk
+        Route::resource('seller/products', \App\Http\Controllers\ProductController::class)->except(['index', 'show']);
     });
 
     // 3. Role: ADMIN
     Route::middleware('role:admin')->group(function () {
-        Route::view('/admin/dashboard', 'dashboards.admin')->name('admin.dashboard');
+        Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
+        Route::get('/admin/user/{id}', [DashboardController::class, 'viewUser'])->name('admin.user.detail');
+        Route::get('/admin/store/{id}', [DashboardController::class, 'viewStore'])->name('admin.store.detail');
     });
 
-    // RUTE PENGATURAN (Bisa diakses User & Seller)
+    // RUTE PENGATURAN (Bisa diakses semua role yang sudah login)
     Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
     Route::post('/settings/profile', [\App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('settings.profile');
     Route::post('/settings/password', [\App\Http\Controllers\SettingsController::class, 'updatePassword'])->name('settings.password');
     Route::post('/settings/store', [\App\Http\Controllers\SettingsController::class, 'updateStore'])->name('settings.store');
-
 });
-
-
-// 3. Role: SELLER
-    Route::middleware('role:seller')->group(function () {
-        // Panggil melalui controller agar data produk ikut terkirim
-        Route::get('/seller/dashboard', [\App\Http\Controllers\DashboardController::class, 'sellerDashboard'])->name('seller.dashboard');
-        
-        // Rute CRUD Produk (kecuali index dan show karena sudah gabung di dashboard)
-        Route::resource('seller/products', \App\Http\Controllers\ProductController::class)->except(['index', 'show']);
-    });

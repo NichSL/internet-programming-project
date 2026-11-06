@@ -4,9 +4,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
-// Import Controller API kita
-use App\Http\Controllers\Api\ProductApiController;
+// Import Controller API
 use App\Http\Controllers\Api\MarketApiController;
+use App\Http\Controllers\Api\AdminApiController;
+use App\Http\Controllers\Api\ProductApiController;
+use App\Http\Controllers\Api\CartApiController;
+use App\Http\Controllers\Api\OrderApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +48,45 @@ Route::post('/login', function (Request $request) {
 });
 
 
+// 2. RUTE LOGIN KHUSUS ADMIN (Menolak role selain admin)
+    Route::post('/admin/login', function (Request $request) {
+        $credentials = $request->validate([
+            'username' => 'required',
+            'password' => 'required'
+        ]);
+
+        // Cek kecocokan password
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            
+            // CEK ROLE: Jika dia bukan admin, batalkan login dan hapus sesinya
+            if (strtolower($user->role) !== 'admin') {
+                // Logout paksa karena dia bukan admin
+                Auth::logout(); 
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak! Anda bukan Admin.'
+                ], 403);
+            }
+            
+            // Jika dia benar-benar admin, buatkan Token
+            $token = $user->createToken('Admin API Token')->plainTextToken;
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Login Admin berhasil',
+                'token'   => $token,
+                'role'    => $user->role
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Username atau Password salah'
+        ], 401);
+    });
+
+
 /*
 |--------------------------------------------------------------------------
 | RUTE API TERTUTUP (Membutuhkan Token)
@@ -71,7 +113,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/market/{id}', [MarketApiController::class, 'show']);
 
 
-
     // ----------------------------------------------------
     // API UNTUK MENDAPATKAN DATA PROFIL USER SAAT INI
     // ----------------------------------------------------
@@ -86,9 +127,40 @@ Route::middleware('auth:sanctum')->group(function () {
                 'name'     => $user->name,
                 'username' => $user->username,
                 'email'    => $user->email,
-                'role'     => $user->role // Saya tambahkan role agar lebih lengkap
+                'role'     => $user->role
             ]
         ], 200);
     });
+
+
+
+    // ----------------------------------------------------
+    // API KHUSUS ADMIN (Melihat User & Toko)
+    // ----------------------------------------------------
+    // List semua user
+    Route::get('/admin/users', [AdminApiController::class, 'indexUsers']);
+    
+    // History belanja user biasa
+    Route::get('/admin/user/{id}/history', [AdminApiController::class, 'showUserHistory']);
+    
+    // History produk dan penjualan toko (seller)
+    Route::get('/admin/store/{id}/history', [AdminApiController::class, 'showStoreHistory']);
+
+    // ----------------------------------------------------
+    // API KERANJANG BELANJA (Scoped to authenticated user)
+    // ----------------------------------------------------
+    Route::get('/cart', [CartApiController::class, 'index']);                // GET  /api/cart
+    Route::post('/cart', [CartApiController::class, 'store']);               // POST /api/cart
+    Route::patch('/cart/{itemId}', [CartApiController::class, 'update']);    // PATCH /api/cart/{id}
+    Route::delete('/cart/{itemId}', [CartApiController::class, 'destroy']);  // DELETE /api/cart/{id}
+    Route::delete('/cart', [CartApiController::class, 'clear']);             // DELETE /api/cart (clear all)
+
+
+    // ----------------------------------------------------
+    // API RIWAYAT PESANAN (Scoped to authenticated user)
+    // ----------------------------------------------------
+    // IMPORTANT: 'my-orders' must come before '{id}' to avoid routing conflict
+    Route::get('/orders/my-orders', [OrderApiController::class, 'myOrders']); // GET /api/orders/my-orders
+    Route::get('/orders/{id}', [OrderApiController::class, 'show']);           // GET /api/orders/{id}
 
 });

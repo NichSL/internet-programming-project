@@ -119,6 +119,49 @@
         </div>
         @endif
 
+        <!-- Zona Bahaya: Logout -->
+        <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-red-200 dark:border-red-900/50">
+            <h2 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Keluar dari Akun</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Anda akan keluar dari sesi ini sepenuhnya. Pastikan Anda sudah menyimpan semua perubahan.</p>
+            <button onclick="openLogoutModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-sm flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Logout Akun
+            </button>
+        </div>
+
     </main>
-</body>
+
+    <!-- Form Logout -->
+    <form id="form-logout-settings" action="{{ route('logout') }}" method="POST" class="hidden">
+        @csrf
+    </form>
+
+    <!-- Modal Konfirmasi Logout -->
+    <div id="modal-logout-settings" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeLogoutModal()"></div>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl z-10 text-center border border-slate-200 dark:border-slate-700">
+            <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Logout Akun?</h3>
+            <p class="text-slate-500 dark:text-slate-400 mb-6 text-sm">Anda akan keluar dari aplikasi sepenuhnya.</p>
+            <div class="flex gap-3">
+                <button onclick="closeLogoutModal()" class="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition">Batal</button>
+                <button onclick="document.getElementById('form-logout-settings').submit()" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition">Ya, Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openLogoutModal() {
+            const m = document.getElementById('modal-logout-settings');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+        function closeLogoutModal() {
+            const m = document.getElementById('modal-logout-settings');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+    </script></body>
 </html>

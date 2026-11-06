@@ -29,24 +29,19 @@
             </div>
 
             <!-- CONTAINER UTAMA: Logo dan Menu Kanan -->
-            <div class="max-w-7xl mx-auto w-full flex justify-between items-center pl-[140px] xl:pl-0">
+            <div class="w-full flex items-center pl-[140px]">
                 
                 <!-- KIRI CONTAINER: Logo -->
                 <h1 class="font-black text-2xl text-white tracking-tight">Admin<span class="text-purple-400">Panel</span></h1>
                 
-                <!-- KANAN CONTAINER: Logout -> Setting(Paling Kanan) -->
-                <div class="flex items-center gap-5">
-                    
-                    <!-- Tombol Pemicu Modal Logout -->
-                    <button onclick="openModal('modal-logout')" class="text-slate-300 dark:text-slate-400 hover:text-white font-medium transition">Logout</button>
-                    
-                    <!-- Form Logout Asli (Disembunyikan) -->
+                <!-- KANAN: Settings only -->
+                <div class="flex items-center gap-5 ml-auto">
                     <form id="form-logout" action="{{ route('logout') }}" method="POST" class="hidden">
                         @csrf
                     </form>
 
                     <!-- Setting (Gear - Paling Kanan) -->
-                    <a href="{{ route('settings', ['context' => 'admin']) }}" class="text-slate-400 hover:text-purple-400 transition ml-2">
+                    <a href="{{ route('settings', ['context' => 'admin']) }}" class="text-slate-400 hover:text-purple-400 transition">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </a>
                 </div>
@@ -54,17 +49,71 @@
             </div>
         </div>
     </nav>
-    <main class="max-w-7xl mx-auto mt-10 px-4 sm:px-6 lg:px-8">
+
+    <main class="max-w-7xl mx-auto mt-10 px-4 sm:px-6 lg:px-8 pb-12">
+        <!-- 1. KOTAK RINGKASAN ATAS -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border-l-4 border-purple-500 dark:border-purple-600">
                 <p class="text-slate-500 dark:text-slate-400 text-sm font-bold">Total Pengguna</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white mt-2">1,204</p>
+                <p class="text-3xl font-black text-slate-800 dark:text-white mt-2">
+                    {{ number_format($totalPengguna, 0, ',', '.') }}
+                </p>
             </div>
             <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border-l-4 border-emerald-500 dark:border-emerald-600">
                 <p class="text-slate-500 dark:text-slate-400 text-sm font-bold">Total Toko</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white mt-2">342</p>
+                <p class="text-3xl font-black text-slate-800 dark:text-white mt-2">
+                    {{ number_format($totalToko, 0, ',', '.') }}
+                </p>
             </div>
         </div>
+
+        <!-- 2. DAFTAR PENGGUNA (DI SINI PENEMPATANNYA) -->
+        <div class="mt-8 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                <h3 class="text-xl font-bold text-slate-800 dark:text-white">Daftar Pengguna & Toko</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 dark:bg-slate-900/50 text-slate-500 text-sm uppercase">
+                            <th class="px-6 py-4">Nama</th>
+                            <th class="px-6 py-4">Role / Toko</th>
+                            <th class="px-6 py-4 text-right">Aksi Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                        @foreach($users as $user)
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                            <td class="px-6 py-4">
+                                <p class="font-bold text-slate-800 dark:text-white">{{ $user->name }}</p>
+                                <p class="text-sm text-slate-500">{{ $user->email }}</p>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if($user->role === 'seller')
+                                    <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full uppercase">Toko: {{ $user->store_name }}</span>
+                                @else
+                                    <span class="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full uppercase">User Biasa</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-right gap-2 flex justify-end">
+                                <!-- Tombol Lihat Pengguna -->
+                                <a href="{{ route('admin.user.detail', $user->id) }}" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2 px-4 rounded-lg transition">Lihat Pengguna</a>
+                                
+                                <!-- Tombol Lihat Toko (Redup jika bukan seller) -->
+                                @if($user->role === 'seller')
+                                    <a href="{{ route('admin.store.detail', $user->id) }}" class="bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-2 px-4 ml-2 rounded-lg transition">Lihat Toko</a>
+                                @else
+                                    <button disabled class="bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-500 text-sm font-bold py-2 px-4 ml-2 rounded-lg cursor-not-allowed opacity-50">Lihat Toko</button>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- AKHIR DAFTAR PENGGUNA -->
+
     </main>
 
     <!-- Modal: Logout Akun -->

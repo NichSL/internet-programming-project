@@ -1,58 +1,254 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Internet Programming Project
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi web berbasis **Laravel 13** dengan autentikasi dan pembagian hak akses `admin`, `seller`, dan `user`. Project ini juga menyediakan REST API menggunakan Laravel Sanctum.
 
-## About Laravel
+## 1. Teknologi yang Dibutuhkan
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Pastikan perangkat sudah memiliki:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP **8.3 atau lebih baru** beserta ekstensi PHP yang dibutuhkan Laravel.
+- Composer.
+- Node.js dan npm.
+- MySQL 8.0 (atau versi kompatibel).
+- Git (opsional, jika project diambil dari repository).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Periksa instalasi melalui terminal:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+php -v
+composer -V
+node -v
+npm -v
+mysql --version
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## 2. Masuk ke Folder Project
 
-## Contributing
+Ekstrak project, buka terminal, lalu masuk ke folder project:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+cd internet-programming-project
+```
 
-## Code of Conduct
+Pastikan terminal berada di folder yang memiliki file `artisan` dan `composer.json`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 3. Install Dependency
 
-## Security Vulnerabilities
+Jalankan perintah berikut dari folder project:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+composer install
+npm install
+```
 
-## License
+## 4. Buat Database MySQL
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Jalankan MySQL, kemudian buat database. Contoh nama database yang digunakan adalah `internet_programming`.
+
+```sql
+CREATE DATABASE internet_programming;
+```
+
+Bisa dijalankan melalui MySQL CLI, TablePlus, DBeaver, phpMyAdmin, atau aplikasi database lainnya.
+
+## 5. Konfigurasi Environment
+
+Buat file `.env` dari file contoh:
+
+```bash
+cp .env.example .env
+```
+
+Buka `.env`, kemudian sesuaikan konfigurasi aplikasi dan database. Contoh konfigurasi MySQL:
+
+```env
+APP_NAME="Internet Programming Project"
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=internet_programming
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Sesuaikan `DB_USERNAME` dan `DB_PASSWORD` dengan akun MySQL di komputer masing-masing. Jika MySQL menggunakan password, isi `DB_PASSWORD` dengan password tersebut.
+
+> Pastikan konfigurasi database lain yang sudah ada di `.env` tidak tertinggal menggunakan SQLite. Setelah mengubah `.env`, jalankan `php artisan config:clear`.
+
+## 6. Generate Application Key
+
+```bash
+php artisan key:generate
+```
+
+## 7. Jalankan Migration dan Seeder
+
+Jalankan:
+
+```bash
+php artisan migrate --seed
+```
+
+Perintah tersebut membuat tabel database dan memasukkan **tiga akun demo** yang tercantum pada bagian [Akun Login Tester](#10-akun-login-tester).
+
+Seeder menggunakan `updateOrCreate`, sehingga aman dijalankan ulang untuk memperbarui akun demo berdasarkan username. Password disimpan dalam bentuk hash oleh model User.
+
+Jika ingin menghapus seluruh tabel/data lalu membuat ulang database dari awal, gunakan:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+**Peringatan:** `migrate:fresh` menghapus seluruh tabel beserta data yang ada di database yang sedang dikonfigurasi. Gunakan hanya pada database development/testing, bukan database yang berisi data penting.
+
+## 8. Jalankan Aplikasi
+
+Buka **dua terminal** dari folder project yang sama.
+
+**Terminal 1 — Laravel:**
+
+```bash
+php artisan serve
+```
+
+Aplikasi berjalan di:
+
+```text
+http://127.0.0.1:8000
+```
+
+**Terminal 2 — Vite:**
+
+```bash
+npm run dev
+```
+
+Biarkan kedua terminal tetap berjalan selama aplikasi digunakan. Vite menyediakan asset frontend selama proses development.
+
+## 9. Halaman Aplikasi
+
+| Halaman | URL | Keterangan |
+|---|---|---|
+| Halaman awal | `http://127.0.0.1:8000/` | Mengarahkan pengguna ke halaman login user |
+| Login User | `http://127.0.0.1:8000/login` | Login untuk akun dengan role `user` atau `seller` |
+| Registrasi | `http://127.0.0.1:8000/register` | Membuat akun user baru |
+| Login Admin | `http://127.0.0.1:8000/admin/login` | Login khusus akun dengan role `admin` |
+
+**Catatan:** Login menggunakan **username**, bukan alamat email. Akun admin harus masuk melalui halaman Login Admin.
+
+## 10. Akun Login Tester
+
+Gunakan akun berikut untuk mencoba aplikasi setelah menjalankan `php artisan migrate --seed`.
+
+| Role | Username | Password | Halaman Login |
+|---|---|---|---|
+| Admin | `admin_niko` | `adminniko123` | `/admin/login` |
+| User | `Akuganteng123` | `12345678` | `/login` |
+| User | `qwe` | `12345678` | `/login` |
+
+Akun demo dibuat otomatis oleh `DatabaseSeeder.php`. Jika akun belum bisa digunakan, jalankan kembali:
+
+```bash
+php artisan db:seed
+```
+
+Akun-akun ini ditujukan untuk keperluan demo dan pengujian lokal. Jangan gunakan password tersebut untuk deployment atau lingkungan production.
+
+## 11. REST API
+
+Base URL API saat server lokal berjalan:
+
+```text
+http://127.0.0.1:8000/api
+```
+
+Beberapa endpoint yang tersedia:
+
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| `POST` | `/api/login` | Login API dan memperoleh token Sanctum |
+| `POST` | `/api/admin/login` | Login API khusus admin |
+| `GET` | `/api/market` | Melihat katalog produk (memerlukan token) |
+| `GET` | `/api/market/{id}` | Melihat detail produk (memerlukan token) |
+| `GET` | `/api/user` | Melihat profil akun yang sedang login (memerlukan token) |
+| `GET` | `/api/products` | Melihat produk melalui API (memerlukan token) |
+| `GET` | `/api/cart` | Melihat keranjang (memerlukan token) |
+| `GET` | `/api/orders/my-orders` | Melihat riwayat pesanan sendiri (memerlukan token) |
+
+### Contoh Login API melalui Postman
+
+1. Pilih method `POST`.
+2. Masukkan URL `http://127.0.0.1:8000/api/login` untuk user, atau `http://127.0.0.1:8000/api/admin/login` untuk admin.
+3. Pilih **Body → raw → JSON**.
+4. Kirim username dan password, contoh:
+
+```json
+{
+  "username": "Akuganteng123",
+  "password": "12345678"
+}
+```
+
+5. Jika berhasil, response akan berisi token. Untuk endpoint yang dilindungi, masukkan token tersebut pada tab **Authorization → Bearer Token**.
+
+## 12. Troubleshooting
+
+**A. `SQLSTATE[HY000] [2002] Connection refused` atau gagal terhubung ke MySQL**
+
+- Pastikan service MySQL sedang berjalan.
+- Periksa `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD` di `.env`.
+- Pastikan database `internet_programming` sudah dibuat.
+- Jalankan `php artisan config:clear` setelah mengubah `.env`.
+
+**B. `No application encryption key has been specified`**
+
+```bash
+php artisan key:generate
+```
+
+**C. Tabel belum tersedia atau migration belum dijalankan**
+
+```bash
+php artisan migrate --seed
+```
+
+**D. Perubahan konfigurasi tidak terbaca**
+
+```bash
+php artisan optimize:clear
+```
+
+**E. Asset/CSS tidak tampil saat development**
+
+Pastikan `npm install` sudah selesai dan jalankan `npm run dev` di terminal terpisah. Pastikan terminal Vite tidak ditutup.
+
+---
+
+## Ringkasan Perintah Menjalankan Project
+
+Setelah konfigurasi `.env` dan database selesai, urutan perintah utama:
+
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+```
+
+Kemudian jalankan pada dua terminal:
+
+```bash
+php artisan serve
+```
+
+```bash
+npm run dev
+```
+
+Buka `http://127.0.0.1:8000` di browser.

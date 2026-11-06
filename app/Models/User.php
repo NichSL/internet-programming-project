@@ -39,4 +39,22 @@ class User extends Authenticatable
     {
         return $this->hasMany(Product::class);
     }
+
+    
+    // History belanja (sebagai pembeli)
+    public function purchases() {
+        return $this->hasMany(Order::class, 'buyer_id');
+    }
+
+    // History penjualan (sebagai penjual)
+    public function sales()
+    {
+        return $this->hasMany(Order::class, 'seller_id');
+    }
+
+    // Keranjang belanja
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
 }

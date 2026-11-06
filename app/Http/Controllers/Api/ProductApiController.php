@@ -9,19 +9,14 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductApiController extends Controller
 {
-    // 1. READ: Mengambil semua data produk milik seller
+    // 1. READ ALL: Melihat semua produk milik seller yang sedang login
     public function index()
     {
         $products = Auth::user()->products()->latest()->get();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Daftar produk berhasil diambil',
-            'data'    => $products
-        ], 200);
+        return response()->json(['success' => true, 'data' => $products]);
     }
 
-    // 2. CREATE: Menyimpan data produk baru
+    // 2. CREATE (TAMBAH): Menambah produk baru
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -31,41 +26,36 @@ class ProductApiController extends Controller
             'stock' => 'required|numeric|min:0',
         ]);
 
+        // Otomatis memasukkan user_id milik seller yang sedang login
         $product = Auth::user()->products()->create($validated);
 
         return response()->json([
             'success' => true,
-            'message' => 'Produk berhasil ditambahkan',
+            'message' => 'Produk berhasil ditambahkan!',
             'data'    => $product
         ], 201);
     }
 
-    // 3. READ: Mengambil detail satu produk (berdasarkan ID)
+    // 3. READ DETAIL: Melihat 1 produk
     public function show($id)
     {
         $product = Product::find($id);
 
         if (!$product || $product->user_id !== Auth::id()) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Produk tidak ditemukan atau akses ditolak'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Produk tidak ditemukan/Akses ditolak'], 404);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Detail produk berhasil diambil',
-            'data'    => $product
-        ], 200);
+        return response()->json(['success' => true, 'data' => $product]);
     }
 
-    // 4. UPDATE: Memperbarui data produk
+    // 4. UPDATE (EDIT): Mengedit produk yang sudah ada
     public function update(Request $request, $id)
     {
         $product = Product::find($id);
 
+        // Cek apakah produk ada & apakah milik seller ini
         if (!$product || $product->user_id !== Auth::id()) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 404);
+            return response()->json(['success' => false, 'message' => 'Akses ditolak atau produk tidak ada'], 403);
         }
 
         $validated = $request->validate([
@@ -79,25 +69,25 @@ class ProductApiController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Produk berhasil diperbarui',
+            'message' => 'Produk berhasil diperbarui!',
             'data'    => $product
-        ], 200);
+        ]);
     }
 
-    // 5. DELETE: Menghapus produk (Soft Delete akan otomatis bekerja)
+    // 5. DELETE (HAPUS): Menghapus produk
     public function destroy($id)
     {
         $product = Product::find($id);
 
         if (!$product || $product->user_id !== Auth::id()) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 404);
+            return response()->json(['success' => false, 'message' => 'Akses ditolak atau produk tidak ada'], 403);
         }
 
-        $product->delete(); // Karena model Product pakai SoftDeletes, ini otomatis jadi soft delete
+        $product->delete(); // Karena pakai trait SoftDeletes, ini jadi soft delete
 
         return response()->json([
             'success' => true,
-            'message' => 'Produk berhasil dihapus'
-        ], 200);
+            'message' => 'Produk berhasil dihapus!'
+        ]);
     }
 }
