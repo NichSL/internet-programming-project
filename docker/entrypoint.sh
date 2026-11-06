@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-PORT="${PORT:-8080}"
+PORT="${PORT:-9000}"
 echo "Configuring Nginx to listen on port ${PORT}..."
 sed -i "s/__PORT__/${PORT}/g" /etc/nginx/http.d/default.conf
 
