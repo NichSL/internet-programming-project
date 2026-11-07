@@ -145,9 +145,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ----------------------------------------------------
     Route::get('/cart', [CartApiController::class, 'index']);                // GET  /api/cart
     Route::post('/cart', [CartApiController::class, 'store']);               // POST /api/cart
+    Route::delete('/cart', [CartApiController::class, 'clear']);             // DELETE /api/cart (clear all)
     Route::patch('/cart/{itemId}', [CartApiController::class, 'update']);    // PATCH /api/cart/{id}
     Route::delete('/cart/{itemId}', [CartApiController::class, 'destroy']);  // DELETE /api/cart/{id}
-    Route::delete('/cart', [CartApiController::class, 'clear']);             // DELETE /api/cart (clear all)
 
     // ----------------------------------------------------
     // API RIWAYAT PESANAN (Scoped to authenticated user)

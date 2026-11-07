@@ -12,6 +12,7 @@
         }
     </script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="auth-token" content="{{ session('auth_token') }}">
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
 
@@ -109,16 +110,25 @@
                         subtotal:    BUYNOW.price * BUYNOW.quantity,
                     }];
                 } else {
-                    // Fetch from server-side cart API
+                    // Fetch from server-side cart API with Sanctum Bearer token
+                    const token = document.querySelector('meta[name="auth-token"]')?.content || localStorage.getItem('auth_token') || '';
+                    const headers = {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    };
+                    if (token) {
+                        headers['Authorization'] = 'Bearer ' + token;
+                    }
+
                     const res = await fetch('/api/cart', {
-                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        headers: headers,
                         credentials: 'same-origin',
                     });
                     const data = await res.json();
                     if (data.success) {
                         items = (data.data.items || []).map(i => ({
-                            product_id:  i.productId,
-                            productName: i.productName,
+                            product_id:  i.productId || i.product_id,
+                            productName: i.productName || i.name,
                             price:       i.price,
                             quantity:    i.quantity,
                             subtotal:    i.subtotal,

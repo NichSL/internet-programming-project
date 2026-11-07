@@ -5,180 +5,243 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CartItem;
 use App\Models\Product;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CartApiController extends Controller
 {
     /**
      * Format a collection of cart items into the standard response structure.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection  $items
+     * @param  Collection  $items
      * @return array{items: array, totalItems: int, totalPrice: int}
      */
     private function buildCartResponse($items): array
     {
-        $formatted = $items->map(fn ($item) => [
-            'id'          => $item->id,
-            'productId'   => $item->product_id,
+        $validItems = $items->filter(fn ($item) => $item->product !== null);
+
+        $formatted = $validItems->map(fn ($item) => [
+            'id' => $item->id,
+            'itemId' => $item->id,
+            'productId' => $item->product_id,
+            'product_id' => $item->product_id,
             'productName' => $item->product->name,
-            'price'       => $item->product->price,
-            'stock'       => $item->product->stock,
-            'quantity'    => $item->quantity,
-            'subtotal'    => $item->product->price * $item->quantity,
+            'name' => $item->product->name,
+            'image' => $item->product->image ?? null,
+            'price' => (int) $item->product->price,
+            'stock' => (int) $item->product->stock,
+            'quantity' => (int) $item->quantity,
+            'subtotal' => (int) ($item->product->price * $item->quantity),
         ]);
 
         return [
-            'items'      => $formatted->values(),
-            'totalItems' => $formatted->sum('quantity'),
-            'totalPrice' => $formatted->sum('subtotal'),
+            'items' => $formatted->values()->all(),
+            'totalItems' => (int) $formatted->sum('quantity'),
+            'totalPrice' => (int) $formatted->sum('subtotal'),
         ];
     }
 
     /**
      * GET /api/cart
-     * Return the authenticated user's cart.
+     * Mengambil seluruh item keranjang milik user yang sedang login.
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $items = Auth::user()->cartItems()->with('product')->get();
+        $user = $request->user();
+
+        $items = CartItem::where('user_id', $user->id)
+            ->with('product')
+            ->get();
 
         return response()->json([
             'success' => true,
-            'data'    => $this->buildCartResponse($items),
-        ]);
+            'message' => 'Data keranjang berhasil diambil.',
+            'data' => $this->buildCartResponse($items),
+        ], 200);
     }
 
     /**
      * POST /api/cart
-     * Add a product to the cart (or increase quantity if already present).
+     * Menambahkan produk ke keranjang belanja milik user yang sedang login.
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'productId' => 'required|integer',
-            'quantity'  => 'required|integer|min:1',
-        ]);
+        $productId = $request->input('productId') ?? $request->input('product_id');
+        $quantity = (int) $request->input('quantity', 1);
 
-        $product = Product::find($validated['productId']);
+        if (! $productId || ! is_numeric($productId) || $quantity < 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product ID dan kuantitas valid (minimal 1) wajib diisi.',
+            ], 422);
+        }
+
+        $product = Product::find($productId);
 
         if (! $product) {
             return response()->json([
                 'success' => false,
-                'message' => 'Produk tidak ditemukan.',
+                'message' => 'Produk tidak ditemukan atau sudah tidak tersedia.',
             ], 404);
         }
 
         if ($product->stock < 1) {
             return response()->json([
                 'success' => false,
-                'message' => 'Produk sudah habis.',
+                'message' => 'Stok produk sudah habis.',
             ], 400);
         }
 
-        // Upsert: if item exists, increment; otherwise create
-        $cartItem = CartItem::where('user_id', Auth::id())
-            ->where('product_id', $product->id)
-            ->first();
+        $user = $request->user();
 
-        if ($cartItem) {
-            $newQty = $cartItem->quantity + $validated['quantity'];
-            // Cap at available stock
-            $newQty = min($newQty, $product->stock);
-            $cartItem->update(['quantity' => $newQty]);
-        } else {
-            $qty = min($validated['quantity'], $product->stock);
-            $cartItem = CartItem::create([
-                'user_id'    => Auth::id(),
-                'product_id' => $product->id,
-                'quantity'   => $qty,
-            ]);
-        }
+        return DB::transaction(function () use ($user, $product, $quantity) {
+            $cartItem = CartItem::where('user_id', $user->id)
+                ->where('product_id', $product->id)
+                ->lockForUpdate()
+                ->first();
 
-        $items = Auth::user()->cartItems()->with('product')->get();
+            $currentQty = $cartItem ? $cartItem->quantity : 0;
+            $newQty = $currentQty + $quantity;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Produk berhasil ditambahkan ke keranjang.',
-            'data'    => $this->buildCartResponse($items),
-        ], 201);
+            if ($newQty > $product->stock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Jumlah yang diminta ({$newQty}) melebihi stok yang tersedia ({$product->stock}).",
+                ], 400);
+            }
+
+            if ($cartItem) {
+                $cartItem->update(['quantity' => $newQty]);
+            } else {
+                CartItem::create([
+                    'user_id' => $user->id,
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                ]);
+            }
+
+            $items = CartItem::where('user_id', $user->id)
+                ->with('product')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Produk berhasil ditambahkan ke keranjang.',
+                'data' => $this->buildCartResponse($items),
+            ], 200);
+        });
     }
 
     /**
      * PATCH /api/cart/{itemId}
-     * Update quantity of a specific cart item (must belong to authenticated user).
+     * Mengubah jumlah produk dalam keranjang berdasarkan item ID milik user yang login.
      */
-    public function update(Request $request, int $itemId)
+    public function update(Request $request, int $itemId): JsonResponse
     {
-        $validated = $request->validate([
-            'quantity' => 'required|integer|min:1',
-        ]);
+        $quantity = (int) $request->input('quantity', 0);
+
+        if ($quantity < 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kuantitas minimal adalah 1.',
+            ], 422);
+        }
+
+        $user = $request->user();
 
         $cartItem = CartItem::where('id', $itemId)
-            ->where('user_id', Auth::id())
+            ->where('user_id', $user->id)
             ->with('product')
             ->first();
 
         if (! $cartItem) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item keranjang tidak ditemukan.',
+                'message' => 'Item keranjang tidak ditemukan atau bukan milik Anda.',
             ], 404);
         }
 
-        // Cap at available stock
-        $newQty = min($validated['quantity'], $cartItem->product->stock);
-        $cartItem->update(['quantity' => $newQty]);
+        if (! $cartItem->product) {
+            $cartItem->delete();
 
-        $items = Auth::user()->cartItems()->with('product')->get();
+            return response()->json([
+                'success' => false,
+                'message' => 'Produk ini sudah tidak tersedia dan telah dihapus dari keranjang.',
+            ], 404);
+        }
+
+        if ($quantity > $cartItem->product->stock) {
+            return response()->json([
+                'success' => false,
+                'message' => "Kuantitas melebihi stok yang tersedia (stok: {$cartItem->product->stock}).",
+            ], 400);
+        }
+
+        $cartItem->update(['quantity' => $quantity]);
+
+        $items = CartItem::where('user_id', $user->id)
+            ->with('product')
+            ->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Kuantitas berhasil diperbarui.',
-            'data'    => $this->buildCartResponse($items),
-        ]);
+            'message' => 'Kuantitas keranjang berhasil diperbarui.',
+            'data' => $this->buildCartResponse($items),
+        ], 200);
     }
 
     /**
      * DELETE /api/cart/{itemId}
-     * Remove a specific item from the cart (must belong to authenticated user).
+     * Menghapus satu item dari keranjang milik user yang sedang login.
      */
-    public function destroy(int $itemId)
+    public function destroy(Request $request, int $itemId): JsonResponse
     {
+        $user = $request->user();
+
         $cartItem = CartItem::where('id', $itemId)
-            ->where('user_id', Auth::id())
+            ->where('user_id', $user->id)
             ->first();
 
         if (! $cartItem) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item keranjang tidak ditemukan.',
+                'message' => 'Item keranjang tidak ditemukan atau bukan milik Anda.',
             ], 404);
         }
 
         $cartItem->delete();
 
-        $items = Auth::user()->cartItems()->with('product')->get();
+        $items = CartItem::where('user_id', $user->id)
+            ->with('product')
+            ->get();
 
         return response()->json([
             'success' => true,
             'message' => 'Item berhasil dihapus dari keranjang.',
-            'data'    => $this->buildCartResponse($items),
-        ]);
+            'data' => $this->buildCartResponse($items),
+        ], 200);
     }
 
     /**
      * DELETE /api/cart
-     * Clear the authenticated user's entire cart.
+     * Mengosongkan seluruh keranjang milik user yang sedang login.
      */
-    public function clear()
+    public function clear(Request $request): JsonResponse
     {
-        Auth::user()->cartItems()->delete();
+        $user = $request->user();
+
+        CartItem::where('user_id', $user->id)->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Keranjang berhasil dikosongkan.',
-            'data'    => ['items' => [], 'totalItems' => 0, 'totalPrice' => 0],
-        ]);
+            'data' => [
+                'items' => [],
+                'totalItems' => 0,
+                'totalPrice' => 0,
+            ],
+        ], 200);
     }
 }

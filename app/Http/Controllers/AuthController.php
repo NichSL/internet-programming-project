@@ -13,23 +13,26 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'name'      => 'required|string|max:255',
-            'username'  => ['required', 'string', 'max:255', 'unique:users', 'regex:/^((?!admin).)*$/i'], 
-            'email'     => 'required|string|email|max:255|unique:users',
-            'password'  => 'required|string|min:8|confirmed',
+            'name' => 'required|string|max:255',
+            'username' => ['required', 'string', 'max:255', 'unique:users', 'regex:/^((?!admin).)*$/i'],
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
         ], [
-            'username.regex' => 'username dilarang ada tulisan "admin"'
+            'username.regex' => 'username dilarang ada tulisan "admin"',
         ]);
-        
+
         $user = User::create([
-            'name'     => $validated['name'],
+            'name' => $validated['name'],
             'username' => $validated['username'],
-            'email'    => $validated['email'],
+            'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role'     => 'user',
+            'role' => 'user',
         ]);
 
         Auth::login($user);
+        $token = $user->createToken('auth_token')->plainTextToken;
+        $request->session()->put('auth_token', $token);
+
         return redirect('/dashboard');
     }
 
@@ -43,13 +46,17 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            
+
             // Jika Admin nyasar login di sini, tendang ke login admin
             if (Auth::user()->role === 'admin') {
                 Auth::logout();
+
                 return redirect('/admin/login')->withErrors(['username' => 'Admin harus login melalui portal khusus.']);
             }
-            
+
+            $token = Auth::user()->createToken('auth_token')->plainTextToken;
+            $request->session()->put('auth_token', $token);
+
             return redirect('/dashboard');
         }
 
@@ -69,16 +76,20 @@ class AuthController extends Controller
             'username' => ['required', 'string', 'regex:/admin/i'],
             'password' => 'required|string',
         ], [
-            'username.regex' => 'Format username admin tidak valid.'
+            'username.regex' => 'Format username admin tidak valid.',
         ]);
 
         if (Auth::attempt($credentials)) {
             if (Auth::user()->role !== 'admin') {
                 Auth::logout();
+
                 return back()->withErrors(['username' => 'Akun ini tidak memiliki hak akses Admin.']);
             }
-            
+
             $request->session()->regenerate();
+            $token = Auth::user()->createToken('admin_token')->plainTextToken;
+            $request->session()->put('auth_token', $token);
+
             return redirect('/admin/dashboard');
         }
 
@@ -88,9 +99,15 @@ class AuthController extends Controller
     // 5. PROSES LOGOUT
     public function logout(Request $request)
     {
-        Auth::logout();
+        if (Auth::check()) {
+            Auth::user()->tokens()->delete();
+            Auth::logout();
+        }
+
+        $request->session()->forget('auth_token');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/login');
     }
 }

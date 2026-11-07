@@ -11,8 +11,9 @@
             document.documentElement.classList.add('dark');
         }
     </script>
-    {{-- Sanctum CSRF cookie (needed for session-authenticated API requests) --}}
+    {{-- Sanctum CSRF cookie & Bearer token --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="auth-token" content="{{ session('auth_token') }}">
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 transition-colors duration-300 relative">
 
@@ -181,7 +182,12 @@
 
             {{-- Header --}}
             <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
-                <h3 class="text-xl font-bold text-slate-800 dark:text-white">Keranjang Belanja</h3>
+                <div class="flex items-center gap-3">
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white">Keranjang Belanja</h3>
+                    <button id="btn-clear-cart" onclick="cartClearAll()" class="hidden text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-semibold px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 hover:bg-red-100 transition">
+                        Kosongkan
+                    </button>
+                </div>
                 <button onclick="closeCart()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -233,44 +239,91 @@
 
     {{-- ─── SCRIPT ──────────────────────────────────────────────────────────────── --}}
     <script>
-        // ─── CSRF token for API requests (Sanctum session-based) ─────────────────
+        // ─── CSRF & Sanctum Token for API requests ──────────────────────────────
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+        function getAuthToken() {
+            const metaToken = document.querySelector('meta[name="auth-token"]')?.content;
+            if (metaToken && metaToken.trim() !== '') {
+                localStorage.setItem('auth_token', metaToken.trim());
+                return metaToken.trim();
+            }
+            return localStorage.getItem('auth_token') || '';
+        }
+
+        function getAuthHeaders(extra = {}) {
+            const token = getAuthToken();
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': CSRF,
+                ...extra,
+            };
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+            return headers;
+        }
+
+        function handleUnauthorized() {
+            localStorage.removeItem('auth_token');
+            tampilkanToast('Sesi Anda tidak valid atau telah berakhir. Mengarahkan ke login...', 'error');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1200);
+        }
 
         // ─── API helpers ──────────────────────────────────────────────────────────
         async function apiGet(url) {
             const r = await fetch(url, {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                headers: getAuthHeaders(),
                 credentials: 'same-origin',
             });
+            if (r.status === 401) {
+                handleUnauthorized();
+                throw new Error('Unauthorized');
+            }
             return r.json();
         }
 
         async function apiPost(url, body) {
             const r = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 credentials: 'same-origin',
                 body: JSON.stringify(body),
             });
+            if (r.status === 401) {
+                handleUnauthorized();
+                throw new Error('Unauthorized');
+            }
             return r.json();
         }
 
         async function apiPatch(url, body) {
             const r = await fetch(url, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 credentials: 'same-origin',
                 body: JSON.stringify(body),
             });
+            if (r.status === 401) {
+                handleUnauthorized();
+                throw new Error('Unauthorized');
+            }
             return r.json();
         }
 
         async function apiDelete(url) {
             const r = await fetch(url, {
                 method: 'DELETE',
-                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+                headers: getAuthHeaders(),
                 credentials: 'same-origin',
             });
+            if (r.status === 401) {
+                handleUnauthorized();
+                throw new Error('Unauthorized');
+            }
             return r.json();
         }
 
@@ -393,12 +446,14 @@
                 container.classList.add('hidden');
                 empty.classList.remove('hidden');
                 footer.classList.add('hidden');
+                document.getElementById('btn-clear-cart')?.classList.add('hidden');
                 return;
             }
 
             container.classList.remove('hidden');
             empty.classList.add('hidden');
             footer.classList.remove('hidden');
+            document.getElementById('btn-clear-cart')?.classList.remove('hidden');
 
             data.items.forEach(item => {
                 const row = document.createElement('div');
@@ -461,6 +516,26 @@
                 }
             } catch {
                 tampilkanToast('Terjadi kesalahan.', 'error');
+            }
+        }
+
+        // ─── Cart: clear all items ────────────────────────────────────────────────
+        async function cartClearAll() {
+            if (!confirm('Apakah Anda yakin ingin mengosongkan seluruh isi keranjang?')) {
+                return;
+            }
+            try {
+                const res = await apiDelete('/api/cart');
+                if (res.success) {
+                    cartState = res.data;
+                    updateBadge(0);
+                    renderCartItems(cartState);
+                    tampilkanToast('Keranjang berhasil dikosongkan');
+                } else {
+                    tampilkanToast(res.message || 'Gagal mengosongkan keranjang', 'error');
+                }
+            } catch {
+                tampilkanToast('Terjadi kesalahan saat mengosongkan keranjang.', 'error');
             }
         }
 

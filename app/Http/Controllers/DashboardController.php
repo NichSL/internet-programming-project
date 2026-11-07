@@ -73,6 +73,12 @@ class DashboardController extends Controller
     // 1. FUNGSI UNTUK MENAMPILKAN DASHBOARD USER (Katalog & Pencarian)
     public function userDashboard(Request $request)
     {
+        $user = Auth::user();
+        if ($user && ! session()->has('auth_token')) {
+            $token = $user->createToken('auth_token')->plainTextToken;
+            session(['auth_token' => $token]);
+        }
+
         // Ambil kata kunci pencarian jika ada
         $search = $request->input('search');
 
@@ -133,7 +139,16 @@ class DashboardController extends Controller
     // 4. FUNGSI UNTUK MENAMPILKAN HALAMAN CHECKOUT
     public function checkout()
     {
-        return view('dashboards.checkout');
+        $user = Auth::user();
+        if ($user && ! session()->has('auth_token')) {
+            $token = $user->createToken('auth_token')->plainTextToken;
+            session(['auth_token' => $token]);
+        }
+
+        $mode = request('mode', 'cart');
+        $buynow = null;
+
+        return view('dashboards.checkout', compact('mode', 'buynow'));
     }
 
     // 5. FUNGSI UNTUK MEMPROSES CHECKOUT DARI KERANJANG
