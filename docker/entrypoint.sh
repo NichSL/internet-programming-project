@@ -48,10 +48,16 @@ fi
 # Create storage symlink if missing
 php artisan storage:link --no-interaction || true
 
-# Run database migrations safely (NEVER fresh, NEVER seed)
+# Run database migrations safely (NEVER fresh)
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     echo "Running database migrations..."
     php artisan migrate --force --no-interaction || echo "WARNING: Database migration encountered an issue, continuing startup."
+fi
+
+# Run database seeders if explicitly enabled (idempotent and safe)
+if [ "${RUN_SEEDERS:-false}" = "true" ]; then
+    echo "Running database seeders..."
+    php artisan db:seed --force --no-interaction || echo "WARNING: Database seeding encountered an issue, continuing startup."
 fi
 
 # Cache configuration, routes, and views for optimal performance
